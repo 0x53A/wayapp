@@ -106,6 +106,7 @@ pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
     last_buffer_update: Option<Instant>,
     has_keyboard_focus: bool,
     surface_options: SurfaceOptions,
+    is_frame_requested: bool,
 }
 
 impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
@@ -194,6 +195,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             last_buffer_update: None,
             has_keyboard_focus: false,
             surface_options,
+            is_frame_requested: false,
         }
     }
 
@@ -298,6 +300,10 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
     }
 
     pub fn request_frame(&mut self) {
+        if self.is_frame_requested {
+            return; // Already requested, avoid duplicate
+        }
+        self.is_frame_requested = true;
         let wl_surface = self.wl_surface();
         wl_surface.frame(&self.queue_handle, wl_surface.clone());
         wl_surface.commit();
@@ -368,9 +374,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             || render_output.repaint_delay < Duration::from_secs(1);
 
         if needs_repaint {
-            let wl_surface = self.wl_surface();
-            wl_surface.frame(&self.queue_handle, wl_surface.clone());
-            wl_surface.commit();
+            self.request_frame();
         }
 
         render_output.platform_output
@@ -442,6 +446,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
                     self.render(ui);
                 }
                 WaylandEvent::Frame(_, _) => {
+                    self.is_frame_requested = false; // Frame delivered, clear flag
                     let output = self.render(ui);
                     app.set_cursor(egui_to_cursor_shape(output.cursor_icon));
                 }
