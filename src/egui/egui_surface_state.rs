@@ -53,6 +53,38 @@ use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_protocols::wp::cursor_shape::v1::client::wp_cursor_shape_device_v1::Shape;
 use wayland_protocols::wp::viewporter::client::wp_viewport::WpViewport;
 
+/// Configuration options for the WGPU surface
+#[derive(Debug, Clone, PartialEq)]
+pub struct SurfaceOptions {
+    /// Clear color for the surface background
+    pub clear_color: wgpu::Color,
+    /// Present mode for vsync behavior
+    pub present_mode: wgpu::PresentMode,
+    /// Alpha compositing mode
+    pub alpha_mode: wgpu::CompositeAlphaMode,
+}
+
+impl Default for SurfaceOptions {
+    fn default() -> Self {
+        Self {
+            clear_color: wgpu::Color::BLACK,
+            present_mode: wgpu::PresentMode::Mailbox,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        }
+    }
+}
+
+impl SurfaceOptions {
+    /// Preset for transparent overlay surfaces
+    pub fn transparent_overlay() -> Self {
+        Self {
+            clear_color: wgpu::Color::TRANSPARENT,
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+        }
+    }
+}
+
 /// Surface-specific EGUI state
 pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
     viewport: Option<WpViewport>,
@@ -73,10 +105,28 @@ pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
     output_format: wgpu::TextureFormat,
     last_buffer_update: Option<Instant>,
     has_keyboard_focus: bool,
+    surface_options: SurfaceOptions,
 }
 
 impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
+    /// Create a new surface state with default options (opaque background)
     pub fn new(app: &Application, t: T, width: u32, height: u32) -> Self {
+        Self::new_with_options(app, t, width, height, SurfaceOptions::default())
+    }
+
+    /// Create a new surface state configured for transparent overlays
+    pub fn new_transparent(app: &Application, t: T, width: u32, height: u32) -> Self {
+        Self::new_with_options(app, t, width, height, SurfaceOptions::transparent_overlay())
+    }
+
+    /// Create a new surface state with custom options
+    pub fn new_with_options(
+        app: &Application,
+        t: T,
+        width: u32,
+        height: u32,
+        surface_options: SurfaceOptions,
+    ) -> Self {
         let kind = t.clone().into();
         let wl_surface = kind.get_wl_surface();
         let raw_display_handle = RawDisplayHandle::Wayland(WaylandDisplayHandle::new(
@@ -143,6 +193,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             output_format,
             last_buffer_update: None,
             has_keyboard_focus: false,
+            surface_options,
         }
     }
 
@@ -273,7 +324,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
                     resolve_target: None,
                     depth_slice: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load: wgpu::LoadOp::Clear(self.surface_options.clear_color),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -328,8 +379,8 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             format: self.output_format,
             width,
             height,
-            present_mode: wgpu::PresentMode::Mailbox,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            present_mode: self.surface_options.present_mode,
+            alpha_mode: self.surface_options.alpha_mode,
             view_formats: vec![self.output_format],
             desired_maximum_frame_latency: 2,
         };
