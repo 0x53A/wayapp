@@ -346,7 +346,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             pixels_per_point: self.physical_scale() as f32,
         };
 
-        let platform_output = self.renderer.end_frame_and_draw(
+        let render_output = self.renderer.end_frame_and_draw(
             &self.device,
             &self.queue,
             &mut encoder,
@@ -354,21 +354,26 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             screen_descriptor,
         );
 
-        for command in &platform_output.commands {
+        for command in &render_output.platform_output.commands {
             self.input_state.handle_output_command(command);
         }
 
         self.queue.submit(Some(encoder.finish()));
         surface_texture.present();
 
-        // Only request next frame if there are events
-        if !platform_output.events.is_empty() {
+        // Request next frame if:
+        // 1. There are output events, OR
+        // 2. egui wants a repaint (for animations)
+        let needs_repaint = !render_output.platform_output.events.is_empty()
+            || render_output.repaint_delay < Duration::from_secs(1);
+
+        if needs_repaint {
             let wl_surface = self.wl_surface();
             wl_surface.frame(&self.queue_handle, wl_surface.clone());
             wl_surface.commit();
         }
 
-        platform_output
+        render_output.platform_output
     }
 
     fn reconfigure_surface(&mut self) {
