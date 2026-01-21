@@ -19,6 +19,7 @@ use smithay_client_toolkit::delegate_xdg_popup;
 use smithay_client_toolkit::delegate_xdg_shell;
 use smithay_client_toolkit::delegate_xdg_window;
 use smithay_client_toolkit::output::OutputHandler;
+use smithay_client_toolkit::output::OutputInfo;
 use smithay_client_toolkit::output::OutputState;
 use smithay_client_toolkit::registry::ProvidesRegistryState;
 use smithay_client_toolkit::registry::RegistryState;
@@ -96,9 +97,6 @@ pub enum WaylandEvent {
     PopupDone(Popup),
     WindowRequestClose(Window),
     WindowConfigure(Window, WindowConfigure),
-    OutputCreated(WlOutput),
-    OutputUpdated(WlOutput),
-    OutputDestroyed(WlOutput),
     KeyboardEnter(WlSurface, Vec<u32>, Vec<Keysym>),
     KeyboardLeave(WlSurface),
     KeyPress(KeyEvent),
@@ -121,6 +119,9 @@ pub enum WaylandEvent {
     ImeDeleteSurroundingText(u32, u32),
     /// Signals that a complete set of IME events has been sent for this serial.
     ImeDone(u32),
+    OutputAdded(WlOutput),
+    OutputUpdated(WlOutput),
+    OutputRemoved(WlOutput),
 }
 
 impl WaylandEvent {
@@ -253,6 +254,26 @@ impl Application {
         WaylandEventEmitter {
             dispatch_fn: self.dispatch_fn.clone(),
             events: self.wayland_events.clone(),
+        }
+    }
+
+    /// Get information about an output (monitor)
+    pub fn output_info(&self, output: &WlOutput) -> Option<OutputInfo> {
+        self.output_state.info(output)
+    }
+
+    /// Get an iterator over all known outputs
+    pub fn outputs(&self) -> impl Iterator<Item = WlOutput> + '_ {
+        self.output_state.outputs()
+    }
+
+    pub fn run_blocking(&mut self) {
+        // Run the Wayland event loop. This example will run until the process is killed
+        let mut event_queue = self.event_queue.take().unwrap();
+        loop {
+            event_queue
+                .blocking_dispatch(self)
+                .expect("Wayland dispatch failed");
         }
     }
 
@@ -537,7 +558,7 @@ impl OutputHandler for Application {
     }
 
     fn new_output(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
-        self.push_wayland_event(WaylandEvent::OutputCreated(output));
+        self.push_wayland_event(WaylandEvent::OutputAdded(output));
     }
 
     fn update_output(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
@@ -545,7 +566,7 @@ impl OutputHandler for Application {
     }
 
     fn output_destroyed(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
-        self.push_wayland_event(WaylandEvent::OutputDestroyed(output));
+        self.push_wayland_event(WaylandEvent::OutputRemoved(output));
     }
 }
 
