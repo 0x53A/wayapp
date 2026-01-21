@@ -26,6 +26,38 @@ use wayland_client::Proxy;
 use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_protocols::wp::viewporter::client::wp_viewport::WpViewport;
 
+/// Configuration options for the WGPU surface
+#[derive(Debug, Clone, PartialEq)]
+pub struct SurfaceOptions {
+    /// Clear color for the surface background
+    pub clear_color: wgpu::Color,
+    /// Present mode for vsync behavior
+    pub present_mode: wgpu::PresentMode,
+    /// Alpha compositing mode
+    pub alpha_mode: wgpu::CompositeAlphaMode,
+}
+
+impl Default for SurfaceOptions {
+    fn default() -> Self {
+        Self {
+            clear_color: wgpu::Color::BLACK,
+            present_mode: wgpu::PresentMode::Mailbox,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        }
+    }
+}
+
+impl SurfaceOptions {
+    /// Preset for transparent overlay surfaces
+    pub fn transparent_overlay() -> Self {
+        Self {
+            clear_color: wgpu::Color::TRANSPARENT,
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+        }
+    }
+}
+
 /// Surface-specific EGUI state
 pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
     viewport: Option<WpViewport>,
@@ -49,11 +81,29 @@ pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
 }
 
 impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
+    /// Create a new surface state with default options (opaque background)
     pub fn new(app: &Application, t: T, width: u32, height: u32) -> Self {
+        Self::new_with_options(app, t, width, height, SurfaceOptions::default())
+    }
+
+    /// Create a new surface state configured for transparent overlays
+    pub fn new_transparent(app: &Application, t: T, width: u32, height: u32) -> Self {
+        Self::new_with_options(app, t, width, height, SurfaceOptions::transparent_overlay())
+    }
+
+    /// Create a new surface state with custom options
+    pub fn new_with_options(
+        app: &Application,
+        t: T,
+        width: u32,
+        height: u32,
+        surface_options: SurfaceOptions,
+    ) -> Self {
         let kind = t.clone().into();
         let wl_surface = kind.get_wl_surface();
         let egui_context = Context::default();
-        let renderer = EguiWgpuRenderer::new(&egui_context, wl_surface, &app.conn);
+        let renderer =
+            EguiWgpuRenderer::new(&egui_context, wl_surface, &app.conn, surface_options);
         let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };
         let input_state = WaylandToEguiInput::new(clipboard);
         let emitter = app.get_event_emitter();

@@ -11,3 +11,6 @@ pub use egui::*;
 pub(crate) use frame_scheduler::*;
 pub use kind::*;
 pub use single_color::*;
+
+// Re-export wgpu types needed for SurfaceOptions configuration
+pub use wgpu::{Color as WgpuColor, CompositeAlphaMode, PresentMode};

@@ -1,3 +1,4 @@
+use super::SurfaceOptions;
 use egui::Context;
 use egui_wgpu::Renderer;
 use egui_wgpu::RendererOptions;
@@ -46,6 +47,7 @@ pub struct EguiWgpuRenderer {
     wgpu_surface_config: Option<SurfaceConfiguration>,
     wgpu_instance: wgpu::Instance,
     output_format: TextureFormat,
+    surface_options: SurfaceOptions,
     width: u32,
     height: u32,
     wl_surface: WlSurface,
@@ -57,6 +59,7 @@ impl EguiWgpuRenderer {
         egui_context: &Context,
         wl_surface: &WlSurface,
         conn: &Connection,
+        surface_options: SurfaceOptions,
     ) -> EguiWgpuRenderer {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -103,6 +106,7 @@ impl EguiWgpuRenderer {
             wgpu_queue,
             wgpu_surface_config: None,
             output_format,
+            surface_options,
             width: 0,
             height: 0,
             wl_surface: wl_surface.clone(),
@@ -180,8 +184,8 @@ impl EguiWgpuRenderer {
             format: self.output_format,
             width,
             height,
-            present_mode: wgpu::PresentMode::Mailbox,
-            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+            present_mode: self.surface_options.present_mode,
+            alpha_mode: self.surface_options.alpha_mode,
             view_formats: vec![self.output_format],
             desired_maximum_frame_latency: 2,
         };
@@ -311,10 +315,10 @@ impl EguiWgpuRenderer {
             label: Some("egui clear pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &texture_view,
-                resolve_target: None,
-                depth_slice: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(self.surface_options.clear_color),
                     store: wgpu::StoreOp::Store,
                 },
             })],
