@@ -147,13 +147,17 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
         &self.t
     }
 
-    fn wl_surface(&self) -> &WlSurface {
+    pub fn wl_surface(&self) -> &WlSurface {
         self.kind.get_wl_surface()
     }
 
-    // pub fn get_kind(&self) -> &Kind {
-    //     &self.kind
-    // }
+    pub fn has_keyboard_focus(&self) -> bool {
+        self.has_keyboard_focus
+    }
+
+    pub fn get_kind(&self) -> &Kind {
+        &self.kind
+    }
 
     // pub fn contains<V: Into<Kind>>(&self, other: V) -> bool {
     //     self.kind == other.into()
