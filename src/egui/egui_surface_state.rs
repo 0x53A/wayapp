@@ -203,6 +203,10 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
         self.kind.get_wl_surface()
     }
 
+    pub fn has_keyboard_focus(&self) -> bool {
+        self.has_keyboard_focus
+    }
+
     pub fn get_kind(&self) -> &Kind {
         &self.kind
     }
