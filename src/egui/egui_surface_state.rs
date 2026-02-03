@@ -38,6 +38,7 @@ use smithay_client_toolkit::shell::WaylandSurface;
 use smithay_client_toolkit::shell::wlr_layer::LayerSurface;
 use smithay_client_toolkit::shell::xdg::popup::Popup;
 use smithay_client_toolkit::shell::xdg::window::Window;
+#[cfg(feature = "clipboard")]
 use smithay_clipboard::Clipboard;
 use std::num::NonZero;
 use std::ops::Deref;
@@ -172,8 +173,13 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
             .unwrap_or(&wgpu::TextureFormat::Bgra8Unorm);
 
         let renderer = EguiWgpuRenderer::new(&device, output_format, None, 1);
-        let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };
-        let input_state = WaylandToEguiInput::new(clipboard);
+        #[cfg(feature = "clipboard")]
+        let input_state = {
+            let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };
+            WaylandToEguiInput::new(clipboard)
+        };
+        #[cfg(not(feature = "clipboard"))]
+        let input_state = WaylandToEguiInput::new();
 
         Self {
             viewport: None,

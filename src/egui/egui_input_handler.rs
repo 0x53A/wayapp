@@ -34,6 +34,7 @@ use smithay_client_toolkit::shell::WaylandSurface;
 use smithay_client_toolkit::shell::wlr_layer::LayerSurface;
 use smithay_client_toolkit::shell::xdg::popup::Popup;
 use smithay_client_toolkit::shell::xdg::window::Window;
+#[cfg(feature = "clipboard")]
 use smithay_clipboard::Clipboard;
 use std::num::NonZero;
 use std::ptr::NonNull;
@@ -54,11 +55,13 @@ pub struct WaylandToEguiInput {
     screen_width: u32,
     screen_height: u32,
     start_time: Instant,
+    #[cfg(feature = "clipboard")]
     clipboard: Clipboard,
     last_key_utf8: Option<String>,
 }
 
 impl WaylandToEguiInput {
+    #[cfg(feature = "clipboard")]
     pub fn new(clipboard: Clipboard) -> Self {
         Self {
             modifiers: EguiModifiers::default(),
@@ -68,6 +71,19 @@ impl WaylandToEguiInput {
             screen_height: 256,
             start_time: Instant::now(),
             clipboard,
+            last_key_utf8: None,
+        }
+    }
+
+    #[cfg(not(feature = "clipboard"))]
+    pub fn new() -> Self {
+        Self {
+            modifiers: EguiModifiers::default(),
+            pointer_pos: Pos2::ZERO,
+            events: Vec::new(),
+            screen_width: 256,
+            screen_height: 256,
+            start_time: Instant::now(),
             last_key_utf8: None,
         }
     }
@@ -161,6 +177,7 @@ impl WaylandToEguiInput {
             match event.keysym {
                 Keysym::c => self.events.push(Event::Copy),
                 Keysym::x => self.events.push(Event::Cut),
+                #[cfg(feature = "clipboard")]
                 Keysym::v => self
                     .events
                     .push(Event::Paste(self.clipboard.load().unwrap_or_default())),
@@ -231,7 +248,9 @@ impl WaylandToEguiInput {
     pub fn handle_output_command(&mut self, output: &egui::OutputCommand) {
         match output {
             egui::OutputCommand::CopyText(text) => {
+                #[cfg(feature = "clipboard")]
                 self.clipboard.store(text.clone());
+                let _ = text;
             }
             egui::OutputCommand::CopyImage(_image) => {
                 // Handle image copy if needed
