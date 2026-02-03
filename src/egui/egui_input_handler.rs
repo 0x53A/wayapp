@@ -16,6 +16,7 @@ use smithay_client_toolkit::seat::keyboard::Keysym;
 use smithay_client_toolkit::seat::keyboard::Modifiers as WaylandModifiers;
 use smithay_client_toolkit::seat::pointer::PointerEvent;
 use smithay_client_toolkit::seat::pointer::PointerEventKind;
+#[cfg(feature = "clipboard")]
 use smithay_clipboard::Clipboard;
 use std::time::Instant;
 use wayland_protocols::wp::cursor_shape::v1::client::wp_cursor_shape_device_v1::Shape;
@@ -28,12 +29,14 @@ pub struct WaylandToEguiInput {
     screen_width: u32,
     screen_height: u32,
     start_time: Instant,
+    #[cfg(feature = "clipboard")]
     clipboard: Clipboard,
     last_key_utf8: Option<String>,
     has_keyboard_focus: bool,
 }
 
 impl WaylandToEguiInput {
+    #[cfg(feature = "clipboard")]
     pub fn new(clipboard: Clipboard) -> Self {
         Self {
             modifiers: EguiModifiers::default(),
@@ -43,6 +46,20 @@ impl WaylandToEguiInput {
             screen_height: 256,
             start_time: Instant::now(),
             clipboard,
+            last_key_utf8: None,
+            has_keyboard_focus: false,
+        }
+    }
+
+    #[cfg(not(feature = "clipboard"))]
+    pub fn new() -> Self {
+        Self {
+            modifiers: EguiModifiers::default(),
+            pointer_pos: Pos2::ZERO,
+            events: Vec::new(),
+            screen_width: 256,
+            screen_height: 256,
+            start_time: Instant::now(),
             last_key_utf8: None,
             has_keyboard_focus: false,
         }
@@ -140,6 +157,7 @@ impl WaylandToEguiInput {
             match event.keysym {
                 Keysym::c => self.events.push(Event::Copy),
                 Keysym::x => self.events.push(Event::Cut),
+                #[cfg(feature = "clipboard")]
                 Keysym::v => self
                     .events
                     .push(Event::Paste(self.clipboard.load().unwrap_or_default())),
@@ -210,7 +228,9 @@ impl WaylandToEguiInput {
     pub fn handle_output_command(&mut self, output: &egui::OutputCommand) {
         match output {
             egui::OutputCommand::CopyText(text) => {
+                #[cfg(feature = "clipboard")]
                 self.clipboard.store(text.clone());
+                let _ = text;
             }
             egui::OutputCommand::CopyImage(_image) => {
                 // Handle image copy if needed

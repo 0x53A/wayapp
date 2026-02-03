@@ -10,7 +10,7 @@ edition = "2024"
 [dependencies]
 log = "0.4.29"
 smithay-client-toolkit = "0.20.0"
-smithay-clipboard = "0.7"
+smithay-clipboard = { version = "0.7", optional = true }
 wayland-backend = { version = "0.3.15", features = ["client_system"] }
 wayland-client = "0.31.14"
 wayland-protocols = "0.32.12"
@@ -22,6 +22,11 @@ egui = "0.34.2"
 egui-wgpu = "0.34.2"
 raw-window-handle = "0.6.2"
 wgpu = "29.0.3"
+
+[features]
+default = []
+clipboard = ["dep:smithay-clipboard"]
+_example = []
 
 [dev-dependencies]
 env_logger = "0.11.10"
@@ -38,9 +43,6 @@ hotpath = { version = "0.16", features = ["hotpath", "hotpath-alloc"] }
 [lib]
 name = "wayapp"
 path = "src/lib.rs"
-
-[features]
-_example = []
 
 [[example]]
 name = "egui_tokio_async"

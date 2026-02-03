@@ -50,6 +50,7 @@ use smithay_client_toolkit::shell::xdg::window::WindowHandler;
 use smithay_client_toolkit::shm::Shm;
 use smithay_client_toolkit::shm::ShmHandler;
 use smithay_client_toolkit::subcompositor::SubcompositorState;
+#[cfg(feature = "clipboard")]
 use smithay_clipboard::Clipboard;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -175,6 +176,7 @@ pub struct Application {
     pub subcompositor_state: SubcompositorState,
     pub xdg_shell: XdgShell,
     pub layer_shell: LayerShell,
+    #[cfg(feature = "clipboard")]
     pub clipboard: Clipboard,
     pub viewporter: SimpleGlobal<WpViewporter, 1>,
     pub text_input_manager: Option<SimpleGlobal<ZwpTextInputManagerV3, 1>>,
@@ -216,6 +218,7 @@ impl Application {
         // 1>::bind(&globals, &qh) .expect("zwp_text_input_manager_v3 not
         // available");
 
+        #[cfg(feature = "clipboard")]
         let clipboard = unsafe { Clipboard::new(conn.display().id().as_ptr() as *mut _) };
 
         Self {
@@ -231,6 +234,7 @@ impl Application {
             compositor_state,
             xdg_shell,
             layer_shell,
+            #[cfg(feature = "clipboard")]
             clipboard,
             viewporter,
             text_input_manager: None,

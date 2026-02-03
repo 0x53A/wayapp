@@ -16,6 +16,7 @@ use smithay_client_toolkit::reexports::csd_frame::WindowState;
 use smithay_client_toolkit::seat::keyboard::KeyEvent;
 use smithay_client_toolkit::seat::keyboard::Modifiers as WaylandModifiers;
 use smithay_client_toolkit::seat::pointer::PointerEvent;
+#[cfg(feature = "clipboard")]
 use smithay_clipboard::Clipboard;
 use std::num::NonZero;
 use std::ops::Deref;
@@ -104,8 +105,13 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
         let egui_context = Context::default();
         let renderer =
             EguiWgpuRenderer::new(&egui_context, wl_surface, &app.conn, surface_options);
-        let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };
-        let input_state = WaylandToEguiInput::new(clipboard);
+        #[cfg(feature = "clipboard")]
+        let input_state = {
+            let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };
+            WaylandToEguiInput::new(clipboard)
+        };
+        #[cfg(not(feature = "clipboard"))]
+        let input_state = WaylandToEguiInput::new();
         let emitter = app.get_event_emitter();
         let wl_surface_clone = wl_surface.clone();
         let frame_scheduler = FrameScheduler::new(move || {
