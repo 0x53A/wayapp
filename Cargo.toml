@@ -24,7 +24,7 @@ raw-window-handle = "0.6.2"
 wgpu = "27.0.1"
 
 [features]
-default = []
+default = ["clipboard"]
 clipboard = ["dep:smithay-clipboard"]
 
 [dev-dependencies]
