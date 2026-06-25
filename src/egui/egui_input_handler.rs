@@ -106,14 +106,9 @@ impl WaylandToEguiInput {
                 vertical,
                 ..
             } => {
-                // Handle scroll events
-                // Try value120 first (high-resolution), then absolute (pixels), then discrete
-                // (legacy)
                 let h_scroll = if horizontal.value120 != 0 {
-                    // value120: 120 = one logical scroll step
                     horizontal.value120 as f32 / 120.0
                 } else if horizontal.absolute != 0.0 {
-                    // absolute is in pixels, convert to reasonable scroll units
                     horizontal.absolute as f32 / 20.0
                 } else {
                     horizontal.discrete as f32 * 10.0

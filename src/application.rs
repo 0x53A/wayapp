@@ -98,6 +98,9 @@ pub enum WaylandEvent {
     PopupDone(Popup),
     WindowRequestClose(Window),
     WindowConfigure(Window, WindowConfigure),
+    OutputCreated(WlOutput),
+    OutputUpdated(WlOutput),
+    OutputDestroyed(WlOutput),
     KeyboardEnter(WlSurface, Vec<u32>, Vec<Keysym>),
     KeyboardLeave(WlSurface),
     KeyPress(KeyEvent),
@@ -120,9 +123,6 @@ pub enum WaylandEvent {
     ImeDeleteSurroundingText(u32, u32),
     /// Signals that a complete set of IME events has been sent for this serial.
     ImeDone(u32),
-    OutputCreated(WlOutput),
-    OutputUpdated(WlOutput),
-    OutputDestroyed(WlOutput),
 }
 
 impl WaylandEvent {

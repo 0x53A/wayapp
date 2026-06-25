@@ -11,9 +11,9 @@ pub use egui::*;
 pub(crate) use frame_scheduler::*;
 pub use kind::*;
 pub use single_color::*;
-// Re-export wayland types needed for multi-output support
 pub use smithay_client_toolkit::output::OutputInfo;
 pub use wayland_client::Proxy;
 pub use wayland_client::protocol::wl_output::WlOutput;
-// Re-export wgpu types needed for SurfaceOptions configuration
-pub use wgpu::{Color as WgpuColor, CompositeAlphaMode, PresentMode};
+pub use wgpu::Color as WgpuColor;
+pub use wgpu::CompositeAlphaMode;
+pub use wgpu::PresentMode;

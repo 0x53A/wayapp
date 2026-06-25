@@ -23,11 +23,6 @@ egui-wgpu = "0.34.2"
 raw-window-handle = "0.6.2"
 wgpu = "29.0.3"
 
-[features]
-default = ["clipboard"]
-clipboard = ["dep:smithay-clipboard"]
-_example = []
-
 [dev-dependencies]
 env_logger = "0.11.10"
 tokio = { version = "1.52.3", features = [
@@ -43,6 +38,11 @@ hotpath = { version = "0.16", features = ["hotpath", "hotpath-alloc"] }
 [lib]
 name = "wayapp"
 path = "src/lib.rs"
+
+[features]
+default = ["clipboard"]
+clipboard = ["dep:smithay-clipboard"]
+_example = []
 
 [[example]]
 name = "egui_tokio_async"
