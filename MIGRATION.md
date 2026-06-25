@@ -14,7 +14,7 @@ This fork has been rebased onto upstream `Ciantic/wayapp` `main` at `4fdd54e`.
 
 ## Preserved fork features
 
-- `SurfaceOptions`, `new_transparent`, and `new_with_options` are kept, but now feed into upstream's newer `EguiWgpuRenderer`.
+- `SurfaceOptions`, `new_transparent`, and `new_with_options` are kept, but now feed into upstream's newer `EguiWgpuRenderer`. `SurfaceOptions::default()` matches upstream's transparent default.
 - Clipboard support is feature-gated and enabled by default through the `clipboard` feature.
 - Touchpad scrolling still prefers `value120`, then absolute deltas, then discrete wheel steps.
 

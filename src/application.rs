@@ -271,16 +271,6 @@ impl Application {
         self.output_state.outputs()
     }
 
-    pub fn run_blocking(&mut self) {
-        // Run the Wayland event loop. This example will run until the process is killed
-        let mut event_queue = self.event_queue.take().unwrap();
-        loop {
-            event_queue
-                .blocking_dispatch(self)
-                .expect("Wayland dispatch failed");
-        }
-    }
-
     fn push_wayland_event(&self, event: WaylandEvent) {
         self.wayland_events.lock().unwrap().push(event);
     }

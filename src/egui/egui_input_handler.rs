@@ -231,6 +231,7 @@ impl WaylandToEguiInput {
             egui::OutputCommand::CopyText(text) => {
                 #[cfg(feature = "clipboard")]
                 self.clipboard.store(text.clone());
+                #[cfg(not(feature = "clipboard"))]
                 let _ = text;
             }
             egui::OutputCommand::CopyImage(_image) => {

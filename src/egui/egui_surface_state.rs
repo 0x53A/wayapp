@@ -41,9 +41,9 @@ pub struct SurfaceOptions {
 impl Default for SurfaceOptions {
     fn default() -> Self {
         Self {
-            clear_color: wgpu::Color::BLACK,
+            clear_color: wgpu::Color::TRANSPARENT,
             present_mode: wgpu::PresentMode::Mailbox,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
         }
     }
 }
