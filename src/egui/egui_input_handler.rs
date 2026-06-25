@@ -106,6 +106,10 @@ impl WaylandToEguiInput {
                 vertical,
                 ..
             } => {
+                // Prefer high-resolution touchpad data. Touchpads often report
+                // zero legacy discrete steps, so falling back through absolute
+                // pixels before discrete keeps both touchpads and wheel mice
+                // working.
                 let h_scroll = if horizontal.value120 != 0 {
                     horizontal.value120 as f32 / 120.0
                 } else if horizontal.absolute != 0.0 {
@@ -122,7 +126,9 @@ impl WaylandToEguiInput {
                     vertical.discrete as f32 * 10.0
                 };
 
-                let scroll_delta = egui::vec2(h_scroll, v_scroll);
+                // Wayland reports positive vertical axis values for scrolling
+                // down; egui expects positive Y to move content up.
+                let scroll_delta = egui::vec2(h_scroll, -v_scroll);
 
                 if scroll_delta != egui::Vec2::ZERO {
                     self.events.push(Event::MouseWheel {
