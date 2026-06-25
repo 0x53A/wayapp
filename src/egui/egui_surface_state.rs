@@ -82,7 +82,7 @@ pub struct EguiSurfaceState<T: Into<Kind> + Clone> {
 }
 
 impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
-    /// Create a new surface state with default options (opaque background)
+    /// Create a new surface state with default options.
     pub fn new(app: &Application, t: T, width: u32, height: u32) -> Self {
         Self::new_with_options(app, t, width, height, SurfaceOptions::default())
     }
