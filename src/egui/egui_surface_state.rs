@@ -103,8 +103,7 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
         let kind = t.clone().into();
         let wl_surface = kind.get_wl_surface();
         let egui_context = Context::default();
-        let renderer =
-            EguiWgpuRenderer::new(&egui_context, wl_surface, &app.conn, surface_options);
+        let renderer = EguiWgpuRenderer::new(&egui_context, wl_surface, &app.conn, surface_options);
         #[cfg(feature = "clipboard")]
         let input_state = {
             let clipboard = unsafe { Clipboard::new(app.conn.display().id().as_ptr() as *mut _) };

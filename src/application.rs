@@ -120,9 +120,9 @@ pub enum WaylandEvent {
     ImeDeleteSurroundingText(u32, u32),
     /// Signals that a complete set of IME events has been sent for this serial.
     ImeDone(u32),
-    OutputAdded(WlOutput),
+    OutputCreated(WlOutput),
     OutputUpdated(WlOutput),
-    OutputRemoved(WlOutput),
+    OutputDestroyed(WlOutput),
 }
 
 impl WaylandEvent {
@@ -562,7 +562,7 @@ impl OutputHandler for Application {
     }
 
     fn new_output(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
-        self.push_wayland_event(WaylandEvent::OutputAdded(output));
+        self.push_wayland_event(WaylandEvent::OutputCreated(output));
     }
 
     fn update_output(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
@@ -570,7 +570,7 @@ impl OutputHandler for Application {
     }
 
     fn output_destroyed(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, output: WlOutput) {
-        self.push_wayland_event(WaylandEvent::OutputRemoved(output));
+        self.push_wayland_event(WaylandEvent::OutputDestroyed(output));
     }
 }
 
