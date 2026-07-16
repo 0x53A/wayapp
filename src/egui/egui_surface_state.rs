@@ -425,6 +425,11 @@ impl<T: Into<Kind> + Clone> EguiSurfaceState<T> {
 
                     self.configure(app, width, height, None);
                     self.request_dispatch_frame(app);
+                    // Compositor may not send frame callbacks for surfaces that
+                    // have never had a buffer attached. Schedule a synthetic
+                    // frame via the FrameScheduler as a fallback to bootstrap
+                    // the first render.
+                    self.request_frame();
                 }
                 WaylandEvent::PopupConfigure(_, config) => {
                     let width = config.width as u32;
