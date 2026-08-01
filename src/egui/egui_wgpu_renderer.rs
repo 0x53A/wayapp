@@ -19,6 +19,15 @@ use wayland_client::Connection;
 use wayland_client::Proxy;
 use wayland_client::protocol::wl_surface::WlSurface;
 
+/// Surface format available to native egui-wgpu paint callbacks.
+///
+/// A callback creates its pipeline lazily during `prepare()`, where wgpu does
+/// not otherwise expose the render target format. Each renderer owns its own
+/// callback resource map, so this also does the right thing for multi-output
+/// setups where every output has a separate device.
+#[derive(Clone, Copy, Debug)]
+pub struct CallbackTargetFormat(pub TextureFormat);
+
 // How this works:
 // 1. `new()` creates a wgpu Instance, Device, Queue, and the egui Renderer. The
 //    WlSurface + Connection are saved so the surface can be recreated.
@@ -88,7 +97,7 @@ impl EguiWgpuRenderer {
             .get(0)
             .unwrap_or(&wgpu::TextureFormat::Bgra8Unorm);
 
-        let egui_renderer = Renderer::new(
+        let mut egui_renderer = Renderer::new(
             &wgpu_device,
             output_format,
             RendererOptions {
@@ -97,6 +106,9 @@ impl EguiWgpuRenderer {
                 ..Default::default()
             },
         );
+        egui_renderer
+            .callback_resources
+            .insert(CallbackTargetFormat(output_format));
 
         EguiWgpuRenderer {
             egui_context: egui_context.clone(),
