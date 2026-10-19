@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+Update dependencies EGUI & WGPU
+
+## 0.3.2
+
+Added direct renders to XDG configure
+
 ## 0.3.0
 
 ### Breaking changes: egui & wgpu API updates
