@@ -19,6 +19,8 @@ use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_protocols::wp::viewporter::client::wp_viewport::WpViewport;
 
 #[derive(Debug)]
+/// Solid-color view state. Its viewport is explicitly destroyed on drop,
+/// including when the caller retains ownership of the native surface.
 pub struct SingleColorState<T: Into<Kind> + Clone> {
     t: T,
     kind: Kind,
@@ -26,8 +28,20 @@ pub struct SingleColorState<T: Into<Kind> + Clone> {
     viewport: Option<WpViewport>,
     color: (u8, u8, u8),
     last_buffer_update: Option<Instant>,
-    init_width: u32,
-    init_height: u32,
+    width: u32,
+    height: u32,
+}
+
+impl<T: Into<Kind> + Clone> Drop for SingleColorState<T> {
+    fn drop(&mut self) {
+        // Dropping a proxy does not destroy its protocol object. Release the
+        // viewport before role owners, including when the native surface stays.
+        if let Some(viewport) = self.viewport.take()
+            && viewport.is_alive()
+        {
+            viewport.destroy();
+        }
+    }
 }
 
 impl<T: Into<Kind> + Clone> SingleColorState<T> {
@@ -39,8 +53,8 @@ impl<T: Into<Kind> + Clone> SingleColorState<T> {
             viewport: None,
             color,
             last_buffer_update: None,
-            init_width: width,
-            init_height: height,
+            width: width.max(1),
+            height: height.max(1),
         }
     }
 
@@ -75,12 +89,19 @@ impl<T: Into<Kind> + Clone> SingleColorState<T> {
                 .expect("Failed to create SlotPool")
         });
 
+        // A previous view may leave a high-DPI buffer scale on this surface.
+        // The new buffer/source rectangle uses unscaled logical dimensions.
+        surface.set_buffer_scale(1);
         single_color_example_buffer_configure(
             pool, &surface, viewport, &app.qh, width, height, self.color,
         );
     }
 
     fn configure(&mut self, app: &Application, width: u32, height: u32) {
+        let width = if width == 0 { self.width } else { width };
+        let height = if height == 0 { self.height } else { height };
+        self.width = width;
+        self.height = height;
         trace!(
             "[SINGLE_COLOR] Configure received for surface {:?}: {}x{}",
             self.wl_surface().id(),
@@ -127,12 +148,12 @@ impl<T: Into<Kind> + Clone> SingleColorState<T> {
                     let width = configure
                         .new_size
                         .0
-                        .unwrap_or_else(|| NonZero::new(self.init_width).unwrap())
+                        .unwrap_or_else(|| NonZero::new(self.width).unwrap())
                         .get();
                     let height = configure
                         .new_size
                         .1
-                        .unwrap_or_else(|| NonZero::new(self.init_height).unwrap())
+                        .unwrap_or_else(|| NonZero::new(self.height).unwrap())
                         .get();
                     self.configure(app, width, height);
                 }
@@ -207,5 +228,71 @@ impl<T: Into<Kind> + Clone> Deref for SingleColorState<T> {
 impl<T: Into<Kind> + Clone> DerefMut for SingleColorState<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.t
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use smithay_client_toolkit::shell::WaylandSurface;
+    use smithay_client_toolkit::shell::wlr_layer::Layer;
+    use std::time::Duration;
+    use std::time::Instant;
+
+    #[test]
+    #[ignore = "requires Wayland and wlr-layer-shell"]
+    fn solid_color_resizes_preserve_dimensions_and_release_viewport() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut app = Application::new(move |token| {
+            let _ = tx.send(token);
+        });
+        let layer = app.layer_shell.create_layer_surface(
+            &app.qh,
+            app.compositor_state.create_surface(&app.qh),
+            Layer::Top,
+            Some("wayapp-solid-color-resize"),
+            None,
+        );
+        layer.set_size(64, 64);
+        layer.commit();
+        app.run_dispatcher();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let token = rx
+                .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .unwrap();
+            if app
+                .dispatch_pending(token)
+                .iter()
+                .any(|event| matches!(event, WaylandEvent::LayerShellConfigure(..)))
+            {
+                break;
+            }
+        }
+        let mut state = SingleColorState::new(&layer, (255, 0, 0), 64, 64);
+        state.configure(&app, 64, 64);
+        for size in [128, 256, 512] {
+            layer.set_size(size, size);
+            state.configure(&app, size, size);
+            app.conn
+                .roundtrip()
+                .expect("resize produced a Wayland protocol error");
+        }
+        state.configure(&app, 0, 0);
+        app.conn
+            .roundtrip()
+            .expect("unspecified size must retain previous dimensions");
+        assert_eq!((state.width, state.height), (512, 512));
+        let viewport = state.viewport.as_ref().unwrap().clone();
+        drop(state);
+        assert!(
+            !viewport.is_alive(),
+            "solid-color state drop retained its native viewport object"
+        );
+        let mut replacement = SingleColorState::new(&layer, (0, 255, 0), 512, 512);
+        replacement.configure(&app, 512, 512);
+        app.conn
+            .roundtrip()
+            .expect("replacement state must not create a duplicate viewport");
     }
 }

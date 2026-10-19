@@ -1903,6 +1903,7 @@ dependencies = [
  "hotpath",
  "log",
  "raw-window-handle",
+ "rustix",
  "smithay-client-toolkit 0.21.1",
  "smithay-clipboard",
  "tokio",
@@ -1911,6 +1912,7 @@ dependencies = [
  "wayland-protocols",
  "wayland-protocols-wlr",
  "wgpu",
+ "xkbcommon",
 ]
 
 [[package]]

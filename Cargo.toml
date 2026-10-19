@@ -15,6 +15,8 @@ wayland-backend = { version = "0.3.17", features = ["client_system"] }
 wayland-client = "0.31.15"
 wayland-protocols = "0.32.13"
 wayland-protocols-wlr = "0.3.12"
+rustix = { version = "1.1.5", features = ["event"] }
+xkbcommon = "0.8.0"
 
 # Used only by egui/wgpu backend
 futures = "0.3.34"
